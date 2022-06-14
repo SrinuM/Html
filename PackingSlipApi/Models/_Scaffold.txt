@@ -1,0 +1,2 @@
+﻿# Run Scaffold command to regenerate the database classes.
+Scaffold-DbContext "Name=ConnectionStrings:PhoenixDatabase" Microsoft.EntityFrameworkCore.SqlServer -Tables "dbo.OrderHeader","dbo.OrderDetail","dbo.Account","dbo.OrderShipToAddress","dbo.Contact", "dbo.Product" -UseDatabaseNames -OutputDir Models -Force
