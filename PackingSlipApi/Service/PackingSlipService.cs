@@ -50,6 +50,9 @@ namespace PackingSlipApi.Service
                             select orderHeader;
             OrderHeader? orderHeaderData = orderData.FirstOrDefault();
 
+            if (orderHeaderData == null)
+                throw new ArgumentException("Order Detail data does not exist for given OrderDetailIDs");
+
 
             var orderDetailsId = order.PackingSlipDetailDtos.Select(o => o.OrderDetailId).ToList();
             IQueryable<OrderDetail>? orderDetailData = from orderDetail in _phoenixContext.OrderDetails
@@ -57,23 +60,44 @@ namespace PackingSlipApi.Service
                                                        where orderDetailsId.Contains(orderDetail.Id)
                                                        select orderDetail;
 
+            ReplaceHtmlTextWithModelData(orderHeaderData);
+            CreateProductsTableData(orderDetailData);
+            SetFooter(order.PackingSlipDetailDtos.Count, orderHeaderData);
 
-            htmlText.Replace("{{PrintDate}}", DateTime.Now.ToString("MM/dd/yyyy"));
-                htmlText.Replace("{{OrderDate}}", orderHeaderData.OrderDate.ToString("MM/dd/yyyy"));
-                htmlText.Replace("{{PaymentTerms}}", orderHeaderData.PaymentTerms);
-                htmlText.Replace("{{ShipVia}}", orderHeaderData.ShipmentMethod);
-                htmlText.Replace("{{PurchaseOrderNumber}}", orderHeaderData.PONumber);
-                htmlText.Replace("{{SalesOrderNumber}}", orderHeaderData.Id.ToString());
-                htmlText.Replace("{{OrderedBy}}", orderHeaderData.Contact.FirstName + " " + orderHeaderData.Contact.LastName); //TODO: To be reviewed
-                htmlText.Replace("{{CustomerNumber}}", orderHeaderData.AccountId.ToString());
-                htmlText.Replace("{{AccountType}}", orderHeaderData.Account.AccountTypeCode);
-                htmlText.Replace("{{Comments}}", ((orderHeaderData.SystemComments ?? "") + " " + (orderHeaderData.FreeFormComments ?? "")).Trim()); //TODO: To be reviewed
+            //htmlText.Replace("{{PrintDate}}", DateTime.Now.ToString("MM/dd/yyyy"));
+            //    htmlText.Replace("{{OrderDate}}", orderHeaderData.OrderDate.ToString("MM/dd/yyyy"));
+            //    htmlText.Replace("{{PaymentTerms}}", orderHeaderData.PaymentTerms);
+            //    htmlText.Replace("{{ShipVia}}", orderHeaderData.ShipmentMethod);
+            //    htmlText.Replace("{{PurchaseOrderNumber}}", orderHeaderData.PONumber);
+            //    htmlText.Replace("{{SalesOrderNumber}}", orderHeaderData.Id.ToString());
+            //    htmlText.Replace("{{OrderedBy}}", orderHeaderData.Contact.FirstName + " " + orderHeaderData.Contact.LastName); //TODO: To be reviewed
+            //    htmlText.Replace("{{CustomerNumber}}", orderHeaderData.AccountId.ToString());
+            //    htmlText.Replace("{{AccountType}}", orderHeaderData.Account.AccountTypeCode);
+            //    htmlText.Replace("{{Comments}}", ((orderHeaderData.SystemComments ?? "") + " " + (orderHeaderData.FreeFormComments ?? "")).Trim()); //TODO: To be reviewed
 
-                FillShipToAddress(orderHeaderData);
-                FillBillToAddress(orderHeaderData);
-                CreateProductsTableData(orderDetailData);
+            //    FillShipToAddress(orderHeaderData);
+            //    FillBillToAddress(orderHeaderData);
+            //    CreateProductsTableData(orderDetailData);
             }
-        
+
+        private void ReplaceHtmlTextWithModelData(OrderHeader orderHeaderData)
+        {
+            htmlText.Replace("{{PrintDate}}", DateTime.Now.ToString("MM/dd/yyyy"));
+            htmlText.Replace("{{OrderDate}}", orderHeaderData.OrderDate.ToString("MM/dd/yyyy"));
+            htmlText.Replace("{{PaymentTerms}}", orderHeaderData.PaymentTerms);
+            htmlText.Replace("{{ShipVia}}", orderHeaderData.ShipmentMethod);
+            htmlText.Replace("{{PurchaseOrderNumber}}", orderHeaderData.PONumber);
+            htmlText.Replace("{{SalesOrderNumber}}", orderHeaderData.Id.ToString());
+            htmlText.Replace("{{OrderedBy}}", orderHeaderData.Contact.FirstName + " " + orderHeaderData.Contact.LastName);
+            htmlText.Replace("{{CustomerNumber}}", orderHeaderData.AccountId.ToString());
+            htmlText.Replace("{{AccountType}}", orderHeaderData.Account.AccountTypeCode);
+            htmlText.Replace("{{Comments}}", ((orderHeaderData.SystemComments ?? "") + " " + (orderHeaderData.FreeFormComments ?? "")).Trim());
+
+            FillShipToAddress(orderHeaderData);
+            FillBillToAddress(orderHeaderData);
+        }
+
+
         private void FillShipToAddress(OrderHeader? orderHeaderData)
         {
             htmlText.Replace("{{ShipToAdress_CompanyName}}", orderHeaderData.OrderShipToAddress?.Company?.Trim());
@@ -97,44 +121,70 @@ namespace PackingSlipApi.Service
         private void CreateProductsTableData(IQueryable<OrderDetail> orderDetailData)
         {
             StringBuilder productTableHtml = new StringBuilder();
+            int iterator = 0;
             foreach (OrderDetail orderDetail in orderDetailData)
             {
-                string txt = "<tr><td class=\"add-border padding-for-cell\"><h4 class=\"m-0 p-0\">{{Quantity}}</h4 ></td><td class= \"add-border padding-for-cell\" ><h4 class= \"m-0 p-0\" >{{ItemCode}}</h4 ></td><td class= \"add-border padding-for-cell\" > <h4 class= \"m-0 p-0\" >{{Type}}</h4 ><p class= \"m-0 p-0 address-font\" > ISBN:{{ISBN}}</p ></td></tr > ";
+                string orderDetailHtmlText;
+                if (iterator == 11 || (iterator - 11) % 20 == 0)
+                {
+                    orderDetailHtmlText = "</table><br style=\"margin-top:50px\"><table class=\"width-95 product-table margin-table\"><tr><td class=\"add-border padding-for-cell\"><h4 class=\"m-0 p-0\">{{Quantity}}</h4 ></td><td class= \"add-border padding-for-cell\" ><h4 class= \"m-0 p-0\" >{{ItemCode}}</h4 ></td><td class= \"add-border padding-for-cell\" > <h4 class= \"m-0 p-0\" >{{Type}}</h4 ><p class= \"m-0 p-0\" > ISBN:{{ISBN}}</p ></td></tr > ";
+                }
+                else
+                {
+                    orderDetailHtmlText = "<tr><td class=\"add-border padding-for-cell\"><h4 class=\"m-0 p-0\">{{Quantity}}</h4 ></td><td class= \"add-border padding-for-cell\" ><h4 class= \"m-0 p-0\" >{{ItemCode}}</h4 ></td><td class= \"add-border padding-for-cell\" > <h4 class= \"m-0 p-0\" >{{Type}}</h4 ><p class= \"m-0 p-0\" > ISBN:{{ISBN}}</p ></td></tr > ";
+                }
 
-                txt = txt.Replace("{{Quantity}}", (orderDetail.OpenQuantity + orderDetail.ShippedQuantity).ToString());
-                txt = txt.Replace("{{ItemCode}}", orderDetail.ProductCode);
-                txt = txt.Replace("{{Type}}", orderDetail.Product.Description);
-                txt = txt.Replace("{{ISBN}}", orderDetail.Product.Isbn?.Trim());
+                orderDetailHtmlText = orderDetailHtmlText.Replace("{{Quantity}}", (orderDetail.OpenQuantity + orderDetail.ShippedQuantity).ToString());
+                orderDetailHtmlText = orderDetailHtmlText.Replace("{{ItemCode}}", orderDetail.ProductCode);
+                orderDetailHtmlText = orderDetailHtmlText.Replace("{{Type}}", orderDetail.Product.Description);
+                orderDetailHtmlText = orderDetailHtmlText.Replace("{{ISBN}}", orderDetail.Product.Isbn?.Trim());
                 
-                productTableHtml.Append(txt);
+                productTableHtml.Append(orderDetailHtmlText);
+                iterator++;
             }
             htmlText.Replace("{{productDetailsContent}}", productTableHtml.ToString());
 
         }
 
+        private void SetFooter(int orderDetailProductsCount, OrderHeader orderHeaderData)
+        {
+            int n = orderDetailProductsCount;
+            string footerHtml;
+            if (n == 8 || (n - 11) % 17 == 0 || (n - 11) % 16 == 0)
+            {
+                footerHtml = "<div class=\"margin-table add-border footer w-95\" style=\"margin: 90px 10px 0 10px\" ><p>Comments: <span class=\"font-weight-bold\">{{Comments}}</span></p> </div>";
+            }
+            else
+            {
+                footerHtml = "<div class=\"margin-table add-border footer w-95\"> <p>Comments: <span class=\"font-weight-bold\">{{Comments}}</span></p> </div>";
+            }
+            footerHtml = footerHtml.Replace("{{Comments}}", ((orderHeaderData.SystemComments ?? "") + " " + (orderHeaderData.FreeFormComments ?? "")).Trim());
+            htmlText = htmlText.Replace("{{footer}}", footerHtml);
+        }
+
         private byte[] CreatePDF()
         {
             //Configure page settings
-            var configurationOptions = new PdfGenerateConfig();
+            var configurationOptions = new PdfGenerateConfig
+            {
+                PageOrientation = PageOrientation.Portrait,
+                PageSize = PageSize.A4,
 
-            //Page is in Landscape mode, other option is Portrait
-            configurationOptions.PageOrientation = PdfSharp.PageOrientation.Portrait;
-
-            //Set page type as Letter. Other options are A4 …
-            configurationOptions.PageSize = PdfSharp.PageSize.A4;
-
-            //This is to fit Chrome Auto Margins when printing.Yours may be different
-            configurationOptions.MarginBottom = 10;
-            configurationOptions.MarginLeft = 1;
+                MarginBottom = 19,
+                MarginLeft = 2,
+                // MarginBottom = 70,
+                //MarginLeft = 20,
+                //MarginRight = 20,
+                //MarginTop = 70,
+            };
 
             //The actual PDF generation
-            //var OurPdfPage = PdfGenerator.GeneratePdf(htmlText.ToString(), configurationOptions);
-            var OurPdfPage = PdfGenerator.GeneratePdf(htmlText.ToString(), PageSize.A4);
+            var OurPdfPage = PdfGenerator.GeneratePdf(htmlText.ToString(), configurationOptions);            
 
             OurPdfPage.Save("Output.pdf"); //TODO: to be removed. Added just for viewing purpose
 
             MemoryStream memoryStream = new MemoryStream();
-            OurPdfPage.Save(memoryStream);
+            //OurPdfPage.Save(memoryStream);
             return memoryStream.ToArray();
         }
     }
