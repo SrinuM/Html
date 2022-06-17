@@ -127,11 +127,11 @@ namespace PackingSlipApi.Service
                 string orderDetailHtmlText;
                 if (iterator == 11 || (iterator - 11) % 20 == 0)
                 {
-                    orderDetailHtmlText = "</table><br style=\"margin-top:50px\"><table class=\"width-95 product-table margin-table\"><tr><td class=\"add-border padding-for-cell\"><h4 class=\"m-0 p-0\">{{Quantity}}</h4 ></td><td class= \"add-border padding-for-cell\" ><h4 class= \"m-0 p-0\" >{{ItemCode}}</h4 ></td><td class= \"add-border padding-for-cell\" > <h4 class= \"m-0 p-0\" >{{Type}}</h4 ><p class= \"m-0 p-0\" > ISBN:{{ISBN}}</p ></td></tr > ";
+                    orderDetailHtmlText = "</div>< br style =\"margin-top:50px\"><div class=\"div-table width-95 product-table margin-table\"><div class=\"div-table-row\"><div class=\"divCell add-border padding-for-cell\"><h4 class=\"m-0 p-0\">{{Quantity}}</h4></div><div class=\"divCell add-border padding-for-cell\"><h4 class=\"m-0 p-0\">{{ItemCode}}</h4></div><div class=\"divCell add-border padding-for-cell\"> <h4 class=\"m-0 p-0\">{{Type}}</h4><p class=\"m-0 p-0\"> ISBN:{{ISBN}}</p></div></div>";
                 }
                 else
                 {
-                    orderDetailHtmlText = "<tr><td class=\"add-border padding-for-cell\"><h4 class=\"m-0 p-0\">{{Quantity}}</h4 ></td><td class= \"add-border padding-for-cell\" ><h4 class= \"m-0 p-0\" >{{ItemCode}}</h4 ></td><td class= \"add-border padding-for-cell\" > <h4 class= \"m-0 p-0\" >{{Type}}</h4 ><p class= \"m-0 p-0\" > ISBN:{{ISBN}}</p ></td></tr > ";
+                    orderDetailHtmlText = "<div class=\"div-table-row\"><div class=\"divCell add-border padding-for-cell\"><h4 class=\"m-0 p-0\">{{Quantity}}</h4></div><div class=\"divCell add-border padding-for-cell\"><h4 class=\"m-0 p-0\">{{ItemCode}}</h4></div><div class=\"divCell add-border padding-for-cell\"> <h4 class=\"m-0 p-0\">{{Type}}</h4><p class=\"m-0 p-0\"> ISBN:{{ISBN}}</p></div></div> ";
                 }
 
                 orderDetailHtmlText = orderDetailHtmlText.Replace("{{Quantity}}", (orderDetail.OpenQuantity + orderDetail.ShippedQuantity).ToString());
